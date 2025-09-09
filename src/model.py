@@ -5,8 +5,10 @@ import torch.nn as nn
 import torchvision.models as tv
 from transformers import AutoProcessor, ASTModel
 
+
 class ModalityDropout(nn.Module):
     """Randomly drop one modality during training."""
+
     def __init__(self, p=0.15):
         super().__init__()
         self.p = p
@@ -20,8 +22,10 @@ class ModalityDropout(nn.Module):
             return torch.zeros_like(a), v
         return a, v
 
+
 class CrossAttentionFusion(nn.Module):
     """Audio attends to video with a residual connection."""
+
     def __init__(self, d_audio, d_img, d_model=256, num_heads=4, p_drop=0.1):
         super().__init__()
         self.a_proj = nn.Linear(d_audio, d_model)
@@ -40,8 +44,10 @@ class CrossAttentionFusion(nn.Module):
         out = self.out(out.squeeze(1))
         return out
 
+
 class TemporalPooling(nn.Module):
     """Pools features over the time dimension using mean and max."""
+
     def __init__(self, mode="meanmax"):
         super().__init__()
         self.mode = mode
@@ -54,8 +60,10 @@ class TemporalPooling(nn.Module):
         else:
             return x.mean(dim=1)
 
+
 class MultimodalEmotionRecognizer(nn.Module):
     """Main model for multimodal emotion recognition."""
+
     def __init__(self, num_classes, fusion, image_backbone, ast_model_id, T):
         super().__init__()
         self.T = T
@@ -72,7 +80,7 @@ class MultimodalEmotionRecognizer(nn.Module):
         self.img_proj = nn.Linear(d_img, 128)
         self.img_norm = nn.LayerNorm(128)
         self.temporal_pool = TemporalPooling(mode="meanmax")
-        d_img_proj = 256 # meanmax pooling
+        d_img_proj = 256  # meanmax pooling
 
         # Audio Encoder
         self.processor = AutoProcessor.from_pretrained(ast_model_id)
@@ -111,12 +119,9 @@ class MultimodalEmotionRecognizer(nn.Module):
     def _encode_audio_wave(self, wave: torch.Tensor) -> torch.Tensor:
         if wave.dim() == 3:
             wave = wave.squeeze(1)
-        
+
         inputs = self.processor(
-            wave.cpu().numpy(),
-            sampling_rate=16000,
-            return_tensors="pt",
-            padding=True
+            wave.cpu().numpy(), sampling_rate=16000, return_tensors="pt", padding=True
         )
         inputs = {k: v.to(wave.device) for k, v in inputs.items()}
         outputs = self.audio_net(**inputs)

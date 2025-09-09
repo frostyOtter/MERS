@@ -12,6 +12,7 @@ import pandas as pd
 
 from src import config
 
+
 def load_wav(path: str, target_sr: int, mix_to_mono: bool = True):
     """Loads a waveform from a file."""
     audio, sr = sf.read(path, dtype="float32", always_2d=False)
@@ -29,21 +30,29 @@ def load_wav(path: str, target_sr: int, mix_to_mono: bool = True):
 
     return wav, sr
 
+
 class EmotionDataset(Dataset):
     """Custom dataset for loading video frames and audio."""
-    def __init__(self, data_path:str, df:pd.DataFrame, is_train:bool=True)->None:
+
+    def __init__(self, data_path: str, df: pd.DataFrame, is_train: bool = True) -> None:
         self.data_path = data_path
         self.df = df
         self.is_train = is_train
         self.wave_target_len = config.WAVE_TARGET_LEN
 
-        self.image_transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Resize((config.IMAGE_SIZE, config.IMAGE_SIZE), antialias=True),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        self.image_transform = transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Resize(
+                    (config.IMAGE_SIZE, config.IMAGE_SIZE), antialias=True
+                ),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
 
-    def __len__(self)->int:
+    def __len__(self) -> int:
         return len(self.df)
 
     def __getitem__(self, idx):
@@ -59,17 +68,23 @@ class EmotionDataset(Dataset):
             image_path = os.path.join(video_frame_dir, path)
             frame = cv2.imread(image_path)
             if frame is None:
-                frame = np.zeros((config.IMAGE_SIZE, config.IMAGE_SIZE, 3), dtype=np.uint8)
+                frame = np.zeros(
+                    (config.IMAGE_SIZE, config.IMAGE_SIZE, 3), dtype=np.uint8
+                )
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame = self.image_transform(frame)
             images.append(frame)
             if len(images) >= config.SEQ_LEN:
                 break
-        
+
         while len(images) < config.SEQ_LEN:
-            images.append(images[-1] if images else torch.zeros(3, config.IMAGE_SIZE, config.IMAGE_SIZE))
-            
+            images.append(
+                images[-1]
+                if images
+                else torch.zeros(3, config.IMAGE_SIZE, config.IMAGE_SIZE)
+            )
+
         images = torch.stack(images, dim=0)
 
         # Load and process audio
@@ -86,7 +101,9 @@ class EmotionDataset(Dataset):
         tgt = self.wave_target_len
 
         if L > tgt:
-            start = np.random.randint(0, L - tgt + 1) if self.is_train else (L - tgt) // 2
+            start = (
+                np.random.randint(0, L - tgt + 1) if self.is_train else (L - tgt) // 2
+            )
             wav = wav[:, start : start + tgt]
         elif L < tgt:
             pad = tgt - L

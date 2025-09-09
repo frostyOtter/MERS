@@ -5,28 +5,40 @@ import torch.nn as nn
 from tqdm import tqdm
 from loguru import logger
 
+
 @torch.no_grad()
 def evaluate(model, val_loader, criterion, device):
     """Evaluates the model on the validation set."""
     model.eval()
     running_loss, correct, total = 0.0, 0, 0
-    
+
     for images, audio, labels in val_loader:
         images, audio, labels = images.to(device), audio.to(device), labels.to(device)
-        
+
         outputs = model(images, audio)
         loss = criterion(outputs, labels)
-        
+
         running_loss += loss.item() * labels.size(0)
         _, predicted = outputs.max(1)
         correct += predicted.eq(labels).sum().item()
         total += labels.size(0)
-        
+
     val_loss = running_loss / total
     val_acc = correct / total
     return val_loss, val_acc
 
-def train(model, train_loader, val_loader, optimizer, criterion, device, num_epochs, save_path, scheduler=None):
+
+def train(
+    model,
+    train_loader,
+    val_loader,
+    optimizer,
+    criterion,
+    device,
+    num_epochs,
+    save_path,
+    scheduler=None,
+):
     """Main training loop."""
     best_val_acc = 0.0
     scaler = torch.cuda.amp.GradScaler(enabled=torch.cuda.is_available())
@@ -37,8 +49,12 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
 
         pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} [Train]")
         for images, audio, labels in pbar:
-            images, audio, labels = images.to(device), audio.to(device), labels.to(device)
-            
+            images, audio, labels = (
+                images.to(device),
+                audio.to(device),
+                labels.to(device),
+            )
+
             optimizer.zero_grad(set_to_none=True)
 
             with torch.cuda.amp.autocast(enabled=scaler.is_enabled()):
@@ -54,8 +70,8 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
             _, predicted = outputs.max(1)
             correct += predicted.eq(labels).sum().item()
             total += labels.size(0)
-            
-            pbar.set_postfix(loss=loss.item(), acc=correct/total)
+
+            pbar.set_postfix(loss=loss.item(), acc=correct / total)
 
         train_loss = running_loss / total
         train_acc = correct / total
@@ -75,11 +91,17 @@ def train(model, train_loader, val_loader, optimizer, criterion, device, num_epo
             best_val_acc = val_acc
             state = {
                 "epoch": epoch + 1,
-                "model_state": model.module.state_dict() if isinstance(model, nn.DataParallel) else model.state_dict(),
+                "model_state": (
+                    model.module.state_dict()
+                    if isinstance(model, nn.DataParallel)
+                    else model.state_dict()
+                ),
                 "optimizer_state": optimizer.state_dict(),
                 "best_val_acc": best_val_acc,
             }
             torch.save(state, save_path)
-            logger.info(f"✅ Saved best model to {save_path} (val_acc={best_val_acc:.4f})")
+            logger.info(
+                f"✅ Saved best model to {save_path} (val_acc={best_val_acc:.4f})"
+            )
 
     logger.info(f"🎯 Training finished. Best val_acc: {best_val_acc:.4f}")

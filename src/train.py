@@ -15,6 +15,7 @@ from src.model import MultimodalEmotionRecognizer
 from src.utils import setup_finetune, build_optimizer
 from src.engine import train
 
+
 def main():
     # Setup device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -31,10 +32,18 @@ def main():
     val_dataset = EmotionDataset(config.DATA_PATH, val_df, is_train=False)
 
     train_loader = DataLoader(
-        train_dataset, batch_size=config.BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True
+        train_dataset,
+        batch_size=config.BATCH_SIZE,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
     )
     val_loader = DataLoader(
-        val_dataset, batch_size=config.BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True
+        val_dataset,
+        batch_size=config.BATCH_SIZE,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
     )
 
     # Initialize model
@@ -49,9 +58,9 @@ def main():
     # Setup fine-tuning and optimizer
     if config.FREEZE_BACKBONES:
         setup_finetune(
-            model, 
-            img_unfreeze_last_blocks=config.IMG_UNFREEZE_LAST_BLOCKS, 
-            audio_unfreeze_last_blocks=config.AUDIO_UNFREEZE_LAST_BLOCKS
+            model,
+            img_unfreeze_last_blocks=config.IMG_UNFREEZE_LAST_BLOCKS,
+            audio_unfreeze_last_blocks=config.AUDIO_UNFREEZE_LAST_BLOCKS,
         )
 
     optimizer = build_optimizer(
@@ -61,7 +70,7 @@ def main():
         wd_head=config.WEIGHT_DECAY_HEAD,
         wd_backbone=config.WEIGHT_DECAY_BACKBONE,
     )
-    
+
     # Handle multi-GPU
     if torch.cuda.device_count() > 1:
         logger.info(f"Using {torch.cuda.device_count()} GPUs with DataParallel.")
@@ -69,11 +78,11 @@ def main():
 
     # Loss function and scheduler
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
-    scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.2, patience=3, verbose=True)
+    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.2, patience=3)
 
     # Create directory for checkpoints
     os.makedirs(os.path.dirname(config.MODEL_SAVE_PATH), exist_ok=True)
-    
+
     # Start training
     train(
         model=model,
@@ -84,8 +93,9 @@ def main():
         device=device,
         num_epochs=config.EPOCHS,
         save_path=config.MODEL_SAVE_PATH,
-        scheduler=scheduler
+        scheduler=scheduler,
     )
+
 
 if __name__ == "__main__":
     main()
