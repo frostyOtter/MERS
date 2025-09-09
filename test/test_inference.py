@@ -66,7 +66,7 @@ class TestInferenceSimple(unittest.TestCase):
             os.remove(self.model_path)
 
     @patch("builtins.print")
-    @patch("src.inference.soundfile.read")
+    @patch("soundfile.read")
     @patch("src.inference.extract_audio")
     @patch("src.inference.extract_frames")
     @patch(
