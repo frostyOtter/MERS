@@ -78,7 +78,9 @@ def main():
 
     # Loss function and scheduler
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
-    scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.2, patience=3)
+    # Uncommend to turn on scheduler
+    # scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.2, patience=3)
+    scheduler = None
 
     # Create directory for checkpoints
     os.makedirs(os.path.dirname(config.MODEL_SAVE_PATH), exist_ok=True)
