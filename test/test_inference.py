@@ -97,7 +97,7 @@ class TestInferenceSimple(unittest.TestCase):
         mock_sf_read.return_value = (dummy_waveform, config.SAMPLE_RATE)
 
         # We must import the main function *after* all the mocks are in place
-        from inference import main
+        from src.inference import main
 
         # --- Run Test ---
         main(self.fake_video_path)

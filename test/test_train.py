@@ -21,9 +21,9 @@ sys.modules["dataset"] = MagicMock()
 sys.modules["utils"] = MagicMock()
 
 import config
-from model import MultimodalEmotionRecognizer
-from dataset import EmotionDataset
-from utils import setup_finetune, build_optimizer
+from src.model import MultimodalEmotionRecognizer
+from src.dataset import EmotionDataset
+from src.utils import setup_finetune, build_optimizer
 
 # --- Define Dummy Components ---
 
@@ -128,7 +128,7 @@ class TestTrainingPipeline(unittest.TestCase):
         mock_read_csv.return_value = dummy_df
 
         # Import the main function from the training script *after* mocks are set up
-        from train import main
+        from src.train import main
 
         # --- Run the training process ---
         main()
